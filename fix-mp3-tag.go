@@ -121,7 +121,7 @@ func extractTags(path string) (map[string]string, error) {
 }
 
 func mkitem(item, value string) string {
-	return fmt.Sprintf("--%s=\"%s\"", item, value)
+	return fmt.Sprintf("--%s=%s", item, value)
 }
 
 func setTags(path string, tags map[string]string) error {
