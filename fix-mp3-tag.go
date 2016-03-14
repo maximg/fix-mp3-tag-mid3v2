@@ -120,6 +120,45 @@ func extractTags(path string) (map[string]string, error) {
 	return res, scanner.Err()
 }
 
+func mkitem(item, value string) string {
+	return fmt.Sprintf("--%s=\"%s\"", item, value)
+}
+
+func setTags(path string, tags map[string]string) error {
+	var set1 []string
+	var set2 []string
+	for key, value := range tags {
+		switch key {
+		case "IT1":
+			set1 = append(set1, mkitem("song", value))
+		case "PE1":
+			set1 = append(set1, mkitem("artist", value))
+		case "IT2":
+			set2 = append(set2, mkitem("song", value))
+		case "PE2":
+			set2 = append(set2, mkitem("artist", value))
+		case "ALB":
+			set2 = append(set2, mkitem("album", value))
+		}
+	}
+
+	if len(set2) > 0 {
+		set2 = append(set2, path)
+		cmd := exec.Command("/bin/echo id3tag", set2...)
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	}
+	if len(set1) > 0 {
+		set1 = append(set1, "-1", path)
+		cmd := exec.Command("/bin/echo id3tag", set1...)
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func main() {
 	// image := flag.String("i", "", "The mp3 file to scan")
 	flag.Parse()
@@ -133,6 +172,9 @@ func main() {
 			fmt.Fprintf(os.Stderr, "failed %s: %s\n", image, err.Error())
 		} else if len(tags) > 0 {
 			fmt.Printf("file: %s, tags: %v\n", image, tags)
+			if err := setTags(image, tags); err != nil {
+				fmt.Printf("failed %s: %s\n", image, err.Error())
+			}
 		}
 	}
 }
