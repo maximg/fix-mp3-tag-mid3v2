@@ -19,6 +19,7 @@ func isUtf(s string) bool {
 	return err == nil
 }
 
+// check if the argument is Russian cyrillic utf-8 chars
 func isCyr(s string) bool {
 	for _, c := range s {
 		switch {
@@ -35,23 +36,15 @@ func isCyr(s string) bool {
 	return true
 }
 
+// the interface similar to that of encoding.Decoder and encoding.Encoder
 type StringTrans interface {
 	String(src string) (string, error)
 }
 
-func showerr(err error) string {
-	if err != nil {
-		return err.Error()
-	}
-	return ""
-}
-
+// Apply a number of transformations to the string.
 func decode(src string, tlist ...StringTrans) (string, error) {
-	// fmt.Println("# ---")
 	for _, f := range tlist {
 		dst, err := f.String(src)
-		// fmt.Printf("#%d  [%s]/%d -> [%s]/%d %s\n",
-		//   i, src, len(src), dst, len(dst), showerr(err))
 		if err == nil {
 			src = dst
 			continue
@@ -60,8 +53,6 @@ func decode(src string, tlist ...StringTrans) (string, error) {
 		if len(src) > 4 {
 			src2 := src[0 : len(src)-1]
 			dst, err = f.String(src2)
-			// fmt.Printf("#%d+ [%s]/%d -> [%s]/%d %s\n",
-			//   i, src2, len(src2), dst, len(dst), showerr(err))
 			if err == nil {
 				src = dst
 				continue
@@ -72,26 +63,14 @@ func decode(src string, tlist ...StringTrans) (string, error) {
 	return src, nil
 }
 
-// try to convert the argument from win1251 to utf8
-func fromWin(src string) (string, error) {
-	w := charmap.Windows1251.NewDecoder()
-	return w.String(src)
-}
-
-func fromLat1(src string) (string, error) {
-	e := charmap.ISO8859_1.NewEncoder()
-	tmp, err := e.String(src)
-	if err != nil {
-		return "", err
-	}
-	return fromWin(tmp)
-}
-
-func extractTags(path string) error {
+// Extract tags into a map.
+// Only the changed tags are extracted.
+func extractTags(path string) (map[string]string, error) {
 	cmd := exec.Command("id3info", path)
 	out, err := cmd.Output()
+	res := make(map[string]string)
 	if err != nil {
-		return err
+		return res, err
 	}
 
 	win := charmap.Windows1251.NewDecoder()
@@ -120,22 +99,25 @@ func extractTags(path string) error {
 		}
 		key := str[5:8]
 		value := strings.TrimSpace(words[1])
-		oldval := value
-		if !(isUtf(value) && isCyr(value)) {
-			for _, tlist := range combinations {
-				newval, err := decode(value, tlist...)
-				if err != nil {
-					continue
-				}
-				if isUtf(newval) && isCyr(newval) {
-					value = newval
-					break
-				}
+		if isUtf(value) && isCyr(value) {
+			// already normal tag
+			continue
+		}
+		newval := value
+		for _, tlist := range combinations {
+			val, err := decode(newval, tlist...)
+			if err != nil {
+				continue
+			}
+			if isUtf(val) && isCyr(val) {
+				newval = val
+				break
 			}
 		}
-		fmt.Printf("%s: [%s] [%s]\n", key, oldval, value)
+		res[key] = newval
+		// fmt.Printf("%s: [%s] [%s]\n", key, value, newval)
 	}
-	return scanner.Err()
+	return res, scanner.Err()
 }
 
 func main() {
@@ -147,9 +129,10 @@ func main() {
 	}
 
 	for _, image := range flag.Args() {
-		fmt.Println("###", image)
-		if err := extractTags(image); err != nil {
+		if tags, err := extractTags(image); err != nil {
 			fmt.Fprintf(os.Stderr, "failed %s: %s\n", image, err.Error())
+		} else if len(tags) > 0 {
+			fmt.Printf("file: %s, tags: %v\n", image, tags)
 		}
 	}
 }
