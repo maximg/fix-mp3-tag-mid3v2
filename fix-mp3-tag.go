@@ -125,33 +125,29 @@ func mkitem(item, value string) string {
 }
 
 func setTags(path string, tags map[string]string) error {
-	var set1 []string
-	var set2 []string
+	var set []string
 	for key, value := range tags {
 		switch key {
-		case "IT1":
-			set1 = append(set1, mkitem("song", value))
-		case "PE1":
-			set1 = append(set1, mkitem("artist", value))
 		case "IT2":
-			set2 = append(set2, mkitem("song", value))
+			set = append(set, mkitem("song", value))
+		case "IT1":
+			if _, ok := tags["IT2"]; !ok {
+				set = append(set, mkitem("song", value))
+			}
 		case "PE2":
-			set2 = append(set2, mkitem("artist", value))
+			set = append(set, mkitem("artist", value))
+		case "PE1":
+			if _, ok := tags["PE2"]; !ok {
+				set = append(set, mkitem("artist", value))
+			}
 		case "ALB":
-			set2 = append(set2, mkitem("album", value))
+			set = append(set, mkitem("album", value))
 		}
 	}
 
-	if len(set2) > 0 {
-		set2 = append(set2, path)
-		cmd := exec.Command("/bin/echo id3tag", set2...)
-		if err := cmd.Run(); err != nil {
-			return err
-		}
-	}
-	if len(set1) > 0 {
-		set1 = append(set1, "-1", path)
-		cmd := exec.Command("/bin/echo id3tag", set1...)
+	if len(set) > 0 {
+		set = append(set, path)
+		cmd := exec.Command("id3tag", set...)
 		if err := cmd.Run(); err != nil {
 			return err
 		}
