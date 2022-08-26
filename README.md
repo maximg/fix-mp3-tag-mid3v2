@@ -5,35 +5,21 @@
 A lot of Cyrillic mp3's are broken by f%&amp;king windows encoding.
 This binary will try to fix this.
 
+The original fix-mp3-tag was written by [Dmitry Bukin](https://github.com/bukind).
+As id3lib cannot properly write Unicode tags, this fork switched to Mutagen.
+
 
 ## Dependency
 
-You need id3info and id3tag applications, usually they are part of id3lib package for most Linux distribution.
+For reading and writing tags, you need mid3v2, part of [Mutagen](https://mutagen.readthedocs.io/en/latest/index.html).
+
 To install you need a git client, and a go compiler to build.
+
 
 ## Installation
 
-* setup the environment:
+To be updated.
 
-  ```
-  mkdir -p devel/golang/{bin,src}
-  export GOPATH=$PWD/devel/golang
-  ```
-
-* bring the package from github:
-
-  ```
-  cd $GOPATH
-  git clone https://github.com/bukind/fix-mp3-tag.git src/bukind/fix-mp3-tag
-  ```
-
-* install the binary:
-
-  ```
-  go install github.com/bukind/fix-mp3-tag
-  ```
-
-  The binary will be created as $GOPATH/bin/fix-mp3-tag.
 
 ## Usage
 

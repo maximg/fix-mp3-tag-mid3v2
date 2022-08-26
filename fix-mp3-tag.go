@@ -147,7 +147,8 @@ func setTags(path string, tags map[string]string) error {
 
 	if len(set) > 0 {
 		set = append(set, path)
-		cmd := exec.Command("id3tag", set...)
+		cmd := exec.Command("mid3v2", set...)
+
 		if err := cmd.Run(); err != nil {
 			return err
 		}
